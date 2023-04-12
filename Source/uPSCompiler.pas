@@ -4028,6 +4028,13 @@ begin
         Result := nil;
         exit;
       end;
+      if FParser.CurrTokenID = CSTI_Comma then
+      begin
+       FParser.PushTokenId(CSTI_OpenBlock);
+       FParser.PushTokenId(CSTII_Array);
+       FParser.PushTokenId(CSTII_Of);
+      end
+      else
       if FParser.CurrTokenID <> CSTI_CloseBlock then
       begin
         MakeError('', ecCloseBlockExpected, '');
@@ -6770,14 +6777,18 @@ function TPSPascalCompiler.ProcessSub(BlockInfo: TPSBlockInfo): Boolean;
               rr.aType := TPSArrayType(u).ArrayTypeNo;
               u := rr.aType;
             end;
+            if FParser.CurrTokenId = CSTI_Comma
+             then FParser.CurrTokenId := CSTI_OpenBlock
+            else
             if FParser.CurrTokenId <> CSTI_CloseBlock then
             begin
               MakeError('', ecCloseBlockExpected, '');
               x.Free;
               x := nil;
               exit;
-            end;
-            Fparser.Next;
+            end
+            else
+             Fparser.Next;
           end else begin
             MakeError('', ecSemicolonExpected, '');
             x.Free;

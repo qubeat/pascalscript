@@ -444,7 +444,9 @@ type
     destructor Destroy; override;
   end;
 
+const
 
+ PSTokenIdStackSize = 16;
 
 type
 
@@ -571,6 +573,8 @@ type
     FParserError: TPSParserErrorEvent;
     FEnableComments: Boolean;
     FEnableWhitespaces: Boolean;
+    FTokenIdStackTop : byte;
+    FTokenIdStack : array[0..PSTokenIdStackSize-1] of TPSPasToken;
     function GetCol: Cardinal;
     // only applicable when Token in [CSTI_Identifier, CSTI_Integer, CSTI_Real, CSTI_String, CSTI_Char, CSTI_HexInt]
   public
@@ -581,13 +585,15 @@ type
 
     procedure Next; virtual;
 
+    procedure PushTokenId(TokenId : TPSPasToken);
+
     property GetToken: TbtString read FToken;
 
     property OriginalToken: TbtString read FOriginalToken;
 
     property CurrTokenPos: Cardinal read FRealPosition;
 
-    property CurrTokenID: TPSPasToken read FTokenId;
+    property CurrTokenID: TPSPasToken read FTokenId write FTokenId;
 
     property Row: Cardinal read FRow;
 
@@ -1556,6 +1562,16 @@ begin
     FTokenId := CSTI_EOF;
     Exit;
   end;
+
+  if FTokenIdStackTop > 0 then
+  begin
+    dec(FTokenIdStackTop);
+    FTokenId := FTokenIdStack[FTokenIdStackTop];
+    FOriginalToken := '';
+    FToken := '';
+    Exit;
+  end;
+
   repeat
     FRealPosition := FRealPosition + Cardinal(FTokenLength);
     Err := ParseToken(FRealPosition, Cardinal(FTokenLength), FTokenID);
@@ -1604,6 +1620,15 @@ begin
   until False;
 end;
 
+procedure TPSPascalParser.PushTokenId(TokenId : TPSPasToken);
+begin
+ if FTokenIdStackTop < PSTokenIdStackSize then
+ begin
+  FTokenIdStack[FTokenIdStackTop] := TokenId;
+  Inc(FTokenIdStackTop)
+ end;
+end;
+
 procedure TPSPascalParser.SetText(const Data: TbtString);
 begin
   FData := Data;
@@ -1613,6 +1638,7 @@ begin
   FTokenId := CSTI_EOF;
   FLastEnterPos := 0;
   FRow := 1;
+  FTokenIdStackTop := 0;
   Next;
 end;
 
